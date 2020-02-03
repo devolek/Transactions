@@ -1,10 +1,13 @@
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 public class Bank
 {
-    private HashMap<String, Account> accounts;
+    private Hashtable<String, Account> accounts;
     private final Random random = new Random();
+
+    public Bank(Hashtable<String, Account> accounts) {
+        this.accounts = accounts;
+    }
 
     public synchronized boolean isFraud(String fromAccountNum, String toAccountNum, long amount)
         throws InterruptedException
@@ -22,6 +25,39 @@ public class Bank
      */
     public void transfer(String fromAccountNum, String toAccountNum, long amount)
     {
+        try {
+            if (!accounts.containsKey(fromAccountNum) || !accounts.containsKey(toAccountNum) || fromAccountNum.equals(toAccountNum)) {
+                throw new IllegalArgumentException("Transaction failed! Wrong account number!");
+            }
+
+            Account fromAccount = accounts.get(fromAccountNum);
+            Account toAccount = accounts.get(toAccountNum);
+
+            if (amount > fromAccount.getMoney()){
+                throw new IllegalArgumentException("Transaction failed! Not enough money in the account.");
+            }
+
+            if (fromAccount.isAccIsLockout() || toAccount.isAccIsLockout()) {
+
+                throw new IllegalArgumentException("Transaction failed!"
+                        + (fromAccount.isAccIsLockout() ? " Account " + fromAccountNum + " is blocked!" : "")
+                        + (toAccount.isAccIsLockout() ? " Account " + toAccountNum + " is blocked!" : ""));
+            }
+
+            accounts.get(fromAccountNum).withdrawMoney(amount);
+            accounts.get(toAccountNum).addMoney(amount);
+            System.out.println(amount + " Transaction complied! " + fromAccountNum + " -> " + toAccountNum);
+
+            if (amount > 50000 && isFraud(fromAccountNum, toAccountNum, amount)){
+                accounts.get(fromAccountNum).setAccIsLockout(true);
+                accounts.get(toAccountNum).setAccIsLockout(true);
+                throw new IllegalArgumentException("Fraud transaction! Accounts are blocked!");
+            }
+
+        }
+        catch (IllegalArgumentException | InterruptedException ex){
+            System.out.println(ex.getMessage());
+        }
 
     }
 
@@ -30,6 +66,16 @@ public class Bank
      */
     public long getBalance(String accountNum)
     {
-        return 0;
+       return accounts.get(accountNum).getMoney();
+    }
+
+    public Hashtable<String, Account> getAccounts() {
+        return accounts;
+    }
+    public void printAccounts() {
+        for (Map.Entry<String, Account> entry : accounts.entrySet()){
+            System.out.println("Account number: " + entry.getKey() + " Account balance: "
+                    + entry.getValue().getMoney() + (entry.getValue().isAccIsLockout() ? " Account is blocked!" : ""));
+        }
     }
 }
