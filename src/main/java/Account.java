@@ -1,25 +1,32 @@
 import java.util.concurrent.atomic.AtomicLong;
 
-public class Account
+public class Account implements Comparable<Account>
 {
-    private volatile AtomicLong money;
+    private long money;
     private String accNumber;
     private volatile boolean accIsLockout = false;
+     private boolean canTransfer = true;
 
     public Account(long money, String accNumber) {
-        this.money = new AtomicLong(money);
+        this.money = money;
         this.accNumber = accNumber;
     }
 
-    public long getMoney() {
-        return money.get();
+    public synchronized long getMoney(){
+        return money;
     }
 
-    public void addMoney(long money) {
-    this.money.addAndGet(money);
+    public void  depositMoney(long money) {
+
+            this.money += money;
+
     }
-    public void withdrawMoney(long money) {
-        this.money.set(this.money.get() - money);
+    public void withdrawMoney(long money){
+
+            if (money > this.money) {
+                throw new IllegalArgumentException("Transaction failed! Not enough money in the account.");
+            }
+            this.money -= money;
     }
 
     public String getAccNumber() {
@@ -30,11 +37,28 @@ public class Account
         this.accNumber = accNumber;
     }
 
-    public boolean isAccIsLockout() {
+    public synchronized boolean isAccIsLockout() {
         return accIsLockout;
     }
 
-    public void setAccIsLockout(boolean accIsLockout) {
+    public synchronized void setAccIsLockout(boolean accIsLockout) {
         this.accIsLockout = accIsLockout;
+    }
+    public synchronized void compliedOperation(){
+        canTransfer = true;
+        notifyAll();
+    }
+
+    public boolean isCanTransfer() {
+        return canTransfer;
+    }
+
+    public void setCanTransfer(boolean canTransfer) {
+        this.canTransfer = canTransfer;
+    }
+
+    @Override
+    public int compareTo(Account o) {
+        return Long.compare(Long.parseLong(getAccNumber()), Long.parseLong(o.getAccNumber()));
     }
 }

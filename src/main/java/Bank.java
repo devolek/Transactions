@@ -23,41 +23,48 @@ public class Bank
      * метод isFraud. Если возвращается true, то делается блокировка
      * счетов (как – на ваше усмотрение)
      */
-    public void transfer(String fromAccountNum, String toAccountNum, long amount)
+    public boolean transfer(String fromAccountNum, String toAccountNum, long amount)
     {
+
         try {
             if (!accounts.containsKey(fromAccountNum) || !accounts.containsKey(toAccountNum) || fromAccountNum.equals(toAccountNum)) {
                 throw new IllegalArgumentException("Transaction failed! Wrong account number!");
             }
-
             Account fromAccount = accounts.get(fromAccountNum);
             Account toAccount = accounts.get(toAccountNum);
+            List<Account> accountList = new ArrayList<>();
+            accountList.add(fromAccount);
+            accountList.add(toAccount);
+            Collections.sort(accountList);
 
-            if (amount > fromAccount.getMoney()){
-                throw new IllegalArgumentException("Transaction failed! Not enough money in the account.");
+            synchronized (accountList.get(1)) {
+                synchronized (accountList.get(0)) {
+
+                    if (fromAccount.isAccIsLockout() || toAccount.isAccIsLockout()) {
+
+                        throw new IllegalArgumentException("Transaction failed!"
+                                + (fromAccount.isAccIsLockout() ? " Account " + fromAccountNum + " is blocked!" : "")
+                                + (toAccount.isAccIsLockout() ? " Account " + toAccountNum + " is blocked!" : ""));
+                    }
+
+                    accounts.get(fromAccountNum).withdrawMoney(amount);
+                    accounts.get(toAccountNum).depositMoney(amount);
+
+                    System.out.println("Transaction complied! " + fromAccountNum + " -> " + toAccountNum);
+
+                    if (amount > 50000 && isFraud(fromAccountNum, toAccountNum, amount)) {
+                        accounts.get(fromAccountNum).setAccIsLockout(true);
+                        accounts.get(toAccountNum).setAccIsLockout(true);
+                        throw new IllegalArgumentException("Fraud transaction! Accounts are blocked!");
+                    }
+                    return true;
+                }
             }
-
-            if (fromAccount.isAccIsLockout() || toAccount.isAccIsLockout()) {
-
-                throw new IllegalArgumentException("Transaction failed!"
-                        + (fromAccount.isAccIsLockout() ? " Account " + fromAccountNum + " is blocked!" : "")
-                        + (toAccount.isAccIsLockout() ? " Account " + toAccountNum + " is blocked!" : ""));
             }
-
-            accounts.get(fromAccountNum).withdrawMoney(amount);
-            accounts.get(toAccountNum).addMoney(amount);
-            System.out.println(amount + " Transaction complied! " + fromAccountNum + " -> " + toAccountNum);
-
-            if (amount > 50000 && isFraud(fromAccountNum, toAccountNum, amount)){
-                accounts.get(fromAccountNum).setAccIsLockout(true);
-                accounts.get(toAccountNum).setAccIsLockout(true);
-                throw new IllegalArgumentException("Fraud transaction! Accounts are blocked!");
+        catch(IllegalArgumentException | InterruptedException ex){
+                System.out.println(ex.getMessage());
+                return false;
             }
-
-        }
-        catch (IllegalArgumentException | InterruptedException ex){
-            System.out.println(ex.getMessage());
-        }
 
     }
 
@@ -66,7 +73,9 @@ public class Bank
      */
     public long getBalance(String accountNum)
     {
-       return accounts.get(accountNum).getMoney();
+
+            return accounts.get(accountNum).getMoney();
+
     }
 
     public Hashtable<String, Account> getAccounts() {
