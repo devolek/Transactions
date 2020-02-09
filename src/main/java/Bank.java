@@ -47,14 +47,14 @@ public class Bank
                                 + (toAccount.isAccIsLockout() ? " Account " + toAccountNum + " is blocked!" : ""));
                     }
 
-                    accounts.get(fromAccountNum).withdrawMoney(amount);
-                    accounts.get(toAccountNum).depositMoney(amount);
+                    fromAccount.withdrawMoney(amount);
+                    toAccount.depositMoney(amount);
 
                     System.out.println("Transaction complied! " + fromAccountNum + " -> " + toAccountNum);
 
                     if (amount > 50000 && isFraud(fromAccountNum, toAccountNum, amount)) {
-                        accounts.get(fromAccountNum).setAccIsLockout(true);
-                        accounts.get(toAccountNum).setAccIsLockout(true);
+                        fromAccount.setAccIsLockout(true);
+                        toAccount.setAccIsLockout(true);
                         throw new IllegalArgumentException("Fraud transaction! Accounts are blocked!");
                     }
                     return true;

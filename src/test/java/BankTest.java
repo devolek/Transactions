@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class BankTest extends TestCase
 {
-    private Hashtable<String, Account> accounts;
+    Hashtable<String, Account> accounts;
     long bankBalanceNew = 0;
     long bankBalance = 0;
     Bank bank;
@@ -36,7 +36,7 @@ public class BankTest extends TestCase
             {
                 for (int j = 0; j < 1000; j++)
                 {
-                    long amount = random.nextInt(55) * 1000;
+                    long amount = random.nextInt(52) * 1000;
                     String acc1 = Integer.toString(random.nextInt(10));
                     String acc2 = Integer.toString(random.nextInt(10));
                     if (random.nextBoolean())
